@@ -1,0 +1,569 @@
+import { useState, useEffect } from "react";
+
+const CRITERI = [
+  { id: "equilibrio", label: "Equilibrio Sapori", emoji: "⚖️" },
+  { id: "presentazione", label: "Presentazione", emoji: "🎨" },
+  { id: "crema", label: "Crema", emoji: "🍮" },
+  { id: "savoiardi", label: "Savoiardi", emoji: "🍪" },
+  { id: "caffe", label: "Caffè", emoji: "☕" },
+  { id: "cacao", label: "Cacao", emoji: "🍫" },
+  { id: "consistenza", label: "Consistenza", emoji: "✨" },
+];
+
+const defaultVoti = () => Object.fromEntries(CRITERI.map((c) => [c.id, 0]));
+
+function getMedia(voti) {
+  const vals = Object.values(voti).filter((v) => v > 0);
+  if (vals.length === 0) return null;
+  return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+}
+
+function getGiudizio(media) {
+  if (!media) return { testo: "—", colore: "#b0a090" };
+  const m = parseFloat(media);
+  if (m >= 9) return { testo: "Capolavoro 🏆", colore: "#c8a84b" };
+  if (m >= 7.5) return { testo: "Eccellente 🌟", colore: "#8fb87a" };
+  if (m >= 6) return { testo: "Buono 👍", colore: "#7ab8a0" };
+  if (m >= 4.5) return { testo: "Discreto 🤔", colore: "#c4a05a" };
+  return { testo: "Da migliorare 😕", colore: "#c47a7a" };
+}
+
+function VotoInput({ value, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+      {[...Array(10)].map((_, i) => {
+        const v = i + 1;
+        const active = value === v;
+        return (
+          <button
+            key={v}
+            onClick={() => onChange(active ? 0 : v)}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 6,
+              border: active ? "2px solid #c8a84b" : "1.5px solid #4a3f35",
+              background: active
+                ? "linear-gradient(135deg, #c8a84b, #a07830)"
+                : "rgba(255,255,255,0.04)",
+              color: active ? "#fff" : "#b0a090",
+              fontFamily: "'Playfair Display', serif",
+              fontWeight: active ? 700 : 400,
+              fontSize: 13,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+              transform: active ? "scale(1.08)" : "scale(1)",
+            }}
+          >
+            {v}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TiramisuCard({ tiramisu, onDelete }) {
+  const media = getMedia(tiramisu.voti);
+  const giudizio = getGiudizio(media);
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(200,168,75,0.2)",
+        borderRadius: 12,
+        padding: "14px 16px",
+        marginBottom: 10,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          cursor: "pointer",
+        }}
+        onClick={() => setOpen(!open)}
+      >
+        <div>
+          <div
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 16,
+              color: "#f0e8d8",
+              fontWeight: 700,
+            }}
+          >
+            {tiramisu.nome || "Tiramisù"}
+          </div>
+          <div style={{ fontSize: 12, color: "#8a7a6a", marginTop: 2 }}>
+            {tiramisu.data} · {tiramisu.luogo || "—"}
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ textAlign: "right" }}>
+            <div
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 22,
+                color: giudizio.colore,
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              {media ?? "—"}
+            </div>
+            <div style={{ fontSize: 11, color: giudizio.colore, opacity: 0.85 }}>
+              {giudizio.testo}
+            </div>
+          </div>
+          <span style={{ color: "#8a7a6a", fontSize: 18 }}>{open ? "▲" : "▼"}</span>
+        </div>
+      </div>
+
+      {open && (
+        <div style={{ marginTop: 12, borderTop: "1px solid rgba(200,168,75,0.1)", paddingTop: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {CRITERI.map((c) => (
+              <div
+                key={c.id}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
+                <span style={{ fontSize: 13, color: "#b0a090" }}>
+                  {c.emoji} {c.label}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontWeight: 700,
+                    color: tiramisu.voti[c.id] > 0 ? "#c8a84b" : "#4a3f35",
+                    fontSize: 15,
+                  }}
+                >
+                  {tiramisu.voti[c.id] > 0 ? tiramisu.voti[c.id] : "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+          {tiramisu.note && (
+            <div
+              style={{
+                marginTop: 10,
+                padding: "8px 12px",
+                background: "rgba(200,168,75,0.07)",
+                borderRadius: 8,
+                fontSize: 13,
+                color: "#b0a090",
+                fontStyle: "italic",
+              }}
+            >
+              "{tiramisu.note}"
+            </div>
+          )}
+          <button
+            onClick={() => onDelete(tiramisu.id)}
+            style={{
+              marginTop: 10,
+              background: "transparent",
+              border: "1px solid rgba(196,122,122,0.4)",
+              color: "#c47a7a",
+              borderRadius: 6,
+              padding: "5px 12px",
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            🗑 Elimina
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function App() {
+  const [schermata, setSchermata] = useState("home"); // home | nuova | storico
+  const [storico, setStorico] = useState([]);
+  const [nome, setNome] = useState("");
+  const [luogo, setLuogo] = useState("");
+  const [note, setNote] = useState("");
+  const [voti, setVoti] = useState(defaultVoti());
+  const [salvato, setSalvato] = useState(false);
+
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem("tiramisu_storico");
+      if (s) setStorico(JSON.parse(s));
+    } catch {}
+  }, []);
+
+  const salvaStorico = (nuovo) => {
+    const aggiornato = [nuovo, ...storico];
+    setStorico(aggiornato);
+    try {
+      localStorage.setItem("tiramisu_storico", JSON.stringify(aggiornato));
+    } catch {}
+  };
+
+  const eliminaTiramisu = (id) => {
+    const aggiornato = storico.filter((t) => t.id !== id);
+    setStorico(aggiornato);
+    try {
+      localStorage.setItem("tiramisu_storico", JSON.stringify(aggiornato));
+    } catch {}
+  };
+
+  const handleSalva = () => {
+    const media = getMedia(voti);
+    if (!media) return;
+    const oggi = new Date().toLocaleDateString("it-IT", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+    salvaStorico({
+      id: Date.now(),
+      nome: nome || "Tiramisù",
+      luogo,
+      note,
+      voti: { ...voti },
+      data: oggi,
+    });
+    setSalvato(true);
+    setTimeout(() => {
+      setSalvato(false);
+      setSchermata("storico");
+      setNome("");
+      setLuogo("");
+      setNote("");
+      setVoti(defaultVoti());
+    }, 1500);
+  };
+
+  const media = getMedia(voti);
+  const giudizio = getGiudizio(media);
+
+  const stileInput = {
+    width: "100%",
+    background: "rgba(255,255,255,0.04)",
+    border: "1.5px solid #4a3f35",
+    borderRadius: 8,
+    padding: "10px 14px",
+    color: "#f0e8d8",
+    fontSize: 14,
+    fontFamily: "'Lora', serif",
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#1a1410",
+        backgroundImage:
+          "radial-gradient(ellipse at 20% 0%, rgba(200,168,75,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(160,120,48,0.06) 0%, transparent 60%)",
+        fontFamily: "'Lora', serif",
+        color: "#f0e8d8",
+        padding: "0 0 40px",
+      }}
+    >
+      <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Lora:ital,wght@0,400;0,500;1,400&display=swap"
+        rel="stylesheet"
+      />
+
+      {/* Header */}
+      <div
+        style={{
+          padding: "32px 24px 20px",
+          textAlign: "center",
+          borderBottom: "1px solid rgba(200,168,75,0.15)",
+          marginBottom: 24,
+        }}
+      >
+        <div style={{ fontSize: 36, marginBottom: 4 }}>🍰</div>
+        <h1
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 28,
+            fontWeight: 900,
+            color: "#c8a84b",
+            margin: 0,
+            letterSpacing: "0.02em",
+          }}
+        >
+          Tiramisù Judge
+        </h1>
+        <p style={{ fontSize: 13, color: "#8a7a6a", margin: "6px 0 0", fontStyle: "italic" }}>
+          Il tuo taccuino del tiramisù perfetto
+        </p>
+      </div>
+
+      {/* Nav */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 8,
+          marginBottom: 28,
+          padding: "0 24px",
+        }}
+      >
+        {[
+          { id: "nuova", label: "✍️ Nuova Valutazione" },
+          { id: "storico", label: `📋 Storico (${storico.length})` },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSchermata(tab.id)}
+            style={{
+              flex: 1,
+              padding: "10px 8px",
+              borderRadius: 10,
+              border:
+                schermata === tab.id
+                  ? "1.5px solid #c8a84b"
+                  : "1.5px solid rgba(200,168,75,0.2)",
+              background:
+                schermata === tab.id
+                  ? "linear-gradient(135deg, rgba(200,168,75,0.15), rgba(160,120,48,0.1))"
+                  : "transparent",
+              color: schermata === tab.id ? "#c8a84b" : "#8a7a6a",
+              fontFamily: "'Lora', serif",
+              fontSize: 13,
+              cursor: "pointer",
+              fontWeight: schermata === tab.id ? 600 : 400,
+              transition: "all 0.2s",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ padding: "0 20px" }}>
+        {/* NUOVA VALUTAZIONE */}
+        {schermata === "nuova" && (
+          <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+              <input
+                placeholder="Nome del tiramisù o del locale..."
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                style={stileInput}
+              />
+              <input
+                placeholder="Dove l'hai assaggiato?"
+                value={luogo}
+                onChange={(e) => setLuogo(e.target.value)}
+                style={stileInput}
+              />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 18, marginBottom: 24 }}>
+              {CRITERI.map((c) => (
+                <div key={c.id}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span style={{ fontSize: 14, color: "#d0c0a8", fontWeight: 500 }}>
+                      {c.emoji} {c.label}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        fontWeight: 700,
+                        fontSize: 18,
+                        color: voti[c.id] > 0 ? "#c8a84b" : "#4a3f35",
+                        minWidth: 24,
+                        textAlign: "right",
+                      }}
+                    >
+                      {voti[c.id] > 0 ? voti[c.id] : "—"}
+                    </span>
+                  </div>
+                  <VotoInput
+                    value={voti[c.id]}
+                    onChange={(v) => setVoti((prev) => ({ ...prev, [c.id]: v }))}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Media live */}
+            {media && (
+              <div
+                style={{
+                  background: "rgba(200,168,75,0.08)",
+                  border: "1px solid rgba(200,168,75,0.3)",
+                  borderRadius: 12,
+                  padding: "14px 20px",
+                  textAlign: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: 40,
+                    fontWeight: 900,
+                    color: giudizio.colore,
+                    lineHeight: 1,
+                  }}
+                >
+                  {media}
+                </div>
+                <div style={{ fontSize: 14, color: giudizio.colore, marginTop: 4 }}>
+                  {giudizio.testo}
+                </div>
+              </div>
+            )}
+
+            <textarea
+              placeholder="Note e impressioni (facoltativo)..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              style={{ ...stileInput, resize: "vertical", marginBottom: 16 }}
+            />
+
+            <button
+              onClick={handleSalva}
+              disabled={!media || salvato}
+              style={{
+                width: "100%",
+                padding: "14px",
+                borderRadius: 12,
+                border: "none",
+                background: salvato
+                  ? "#8fb87a"
+                  : media
+                  ? "linear-gradient(135deg, #c8a84b, #a07830)"
+                  : "#3a322a",
+                color: "#fff",
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: media && !salvato ? "pointer" : "default",
+                transition: "all 0.3s",
+                letterSpacing: "0.03em",
+              }}
+            >
+              {salvato ? "✓ Salvato!" : "Salva Valutazione"}
+            </button>
+          </div>
+        )}
+
+        {/* STORICO */}
+        {schermata === "storico" && (
+          <div>
+            {storico.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#8a7a6a" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🍰</div>
+                <div style={{ fontStyle: "italic", fontSize: 14 }}>
+                  Nessun tiramisù valutato ancora.
+                  <br />
+                  Inizia con una nuova valutazione!
+                </div>
+                <button
+                  onClick={() => setSchermata("nuova")}
+                  style={{
+                    marginTop: 16,
+                    padding: "10px 24px",
+                    borderRadius: 10,
+                    border: "1.5px solid #c8a84b",
+                    background: "transparent",
+                    color: "#c8a84b",
+                    fontFamily: "'Lora', serif",
+                    fontSize: 14,
+                    cursor: "pointer",
+                  }}
+                >
+                  ✍️ Nuova Valutazione
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Riepilogo top */}
+                {storico.length > 1 && (
+                  <div
+                    style={{
+                      background: "rgba(200,168,75,0.06)",
+                      border: "1px solid rgba(200,168,75,0.15)",
+                      borderRadius: 12,
+                      padding: "12px 16px",
+                      marginBottom: 16,
+                      display: "flex",
+                      justifyContent: "space-around",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: 22,
+                          color: "#c8a84b",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {storico.length}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#8a7a6a" }}>Assaggiati</div>
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: 22,
+                          color: "#c8a84b",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {(
+                          storico
+                            .map((t) => parseFloat(getMedia(t.voti)))
+                            .filter(Boolean)
+                            .reduce((a, b) => a + b, 0) /
+                          storico.filter((t) => getMedia(t.voti)).length
+                        ).toFixed(1)}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#8a7a6a" }}>Media generale</div>
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: 22,
+                          color: "#c8a84b",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {Math.max(...storico.map((t) => parseFloat(getMedia(t.voti)) || 0)).toFixed(
+                          1
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#8a7a6a" }}>Il migliore</div>
+                    </div>
+                  </div>
+                )}
+
+                {storico.map((t) => (
+                  <TiramisuCard key={t.id} tiramisu={t} onDelete={eliminaTiramisu} />
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
