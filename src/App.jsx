@@ -6,7 +6,7 @@ const SUPABASE_URL = "https://xnoqwuibfbrslfyxivgq.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhub3F3dWliZmJyc2xmeXhpdmdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMTU1NDQsImV4cCI6MjA5MjY5MTU0NH0.RvcLlqCMidpHv09Dl1YfdURRypWwXGLS0Qr0Q_41YFI";
 
 // ⚠️ EMAIL DEGLI AMMINISTRATORI (oltre al flag is_admin su Supabase)
-const ADMIN_EMAILS = ["admin@tuodominio.com"];
+const ADMIN_EMAILS = ["enricozerilli@hotmail.com"];
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
